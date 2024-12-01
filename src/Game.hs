@@ -134,10 +134,10 @@ instance Show Board where
 
 createColumn :: [Card] -> Column
 createColumn [] = []
-createColumn deck = reverse (zip (init deck) (repeat True) ++ [((last deck), True)])
+createColumn deck = reverse (zip (init deck) (repeat False) ++ [((last deck), True)])
 
-takeAndRemove :: Int -> [Card] -> [Card]
-takeAndRemove value deck = take value (drop (value-1) deck)
+takeAndRemove :: Int -> Int -> [Card] -> [Card]
+takeAndRemove from to deck = take (to-from+1) (drop from deck)
 
 setup :: Deck -> Board
 setup deck =
@@ -154,20 +154,20 @@ setup deck =
     }
     where
         boardColumnsValue = [
-            createColumn (takeAndRemove 1 deck),
+            createColumn (takeAndRemove 0 0 deck),
 
-            createColumn (takeAndRemove 2 deck),
+            createColumn (takeAndRemove 1 2 deck),
 
-            createColumn (takeAndRemove 3 deck),
+            createColumn (takeAndRemove 3 5 deck),
 
-            createColumn (takeAndRemove 4 deck),
+            createColumn (takeAndRemove 6 9 deck),
 
-            createColumn (takeAndRemove 5 deck),
+            createColumn (takeAndRemove 10 14 deck),
 
-            createColumn (takeAndRemove 6 deck),
+            createColumn (takeAndRemove 15 20 deck),
 
-            createColumn (takeAndRemove 7 deck)]
-        boardDeckValue = takeAndRemove 24 (reverse deck)
+            createColumn (takeAndRemove 21 27 deck)]
+        boardDeckValue = take 24 (reverse deck)
 
 {- EXERCISE 5: Win checking -}
 isWon :: Board -> Bool
