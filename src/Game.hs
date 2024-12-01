@@ -1,6 +1,7 @@
 module Game where
 import Deck
 import Error
+import Data.List (transpose)
 
 {- Commands and instructions, representing moves to be made -}
 type StackIndex = Int
@@ -59,16 +60,112 @@ data Board = MkBoard {
     deriving (Eq)
 
 
+{- EXERCISE 3: Show boardDeck helper function -}
+showDeck :: [Card] -> String
+showDeck deck = "Deck size: " ++ show (length deck)
+
+{- EXERCISE 3: Show boardDiscard helper function -}
+showDiscard :: [Card] -> String
+showDiscard [] = "Discard: <empty>"
+showDiscard cards = "Discard: " ++ unwords (map show topCards)
+  where
+    topCards = reverse (take 3 cards)
+
+{- EXERCISE 3: Show boardPillars helper function -}
+showPillars :: Pillars -> String
+showPillars pillars = unlines [
+    "  Spades: " ++ showValue (spades pillars),
+    "  Clubs: " ++ showValue (clubs pillars),
+    "  Hearts: " ++ showValue (hearts pillars),
+    "  Diamonds: " ++ showValue (diamonds pillars)
+  ]
+  where
+    showValue Nothing = "<empty>"
+    showValue (Just value) = show value
+
+{- EXERCISE 3: Show boardColumns helper function -}
+type Newcolumn = [Maybe (Card, Bool)]
+convertColumn :: Column -> Newcolumn
+convertColumn col = map Just col
+
+showColumns :: [Column] -> String
+showColumns columns = unlines (header : formattedRows)
+  where
+    header = "[0] [1] [2] [3] [4] [5] [6]"
+
+    newColumns = map convertColumn columns
+    maxColumnLength = maximum (map length newColumns)
+    paddedColumns = map (padColumn maxColumnLength) newColumns
+
+    
+    padColumn :: Int -> Newcolumn -> Newcolumn
+    padColumn maxLen newColumn = replicate (maxLen - length newColumn) Nothing ++ newColumn
+
+    transposeRows = reverse $ transpose paddedColumns
+    
+    rows = map formatColumn transposeRows
+
+    formattedRows = map (unwords . map pad) rows
+
+    formatColumn :: Newcolumn -> [String]
+    formatColumn col = map formatCard col
+      where
+        formatCard (Just (card, True)) = show card
+        formatCard (Just (_   , False)) = "???"
+        formatCard Nothing = "   "
+
+    pad :: String -> String
+    pad s = s ++ ""
 
 {- EXERCISE 3: Show instance for the board -}
 {- We recommend writing helper functions. -}
 instance Show Board where
-    show b = error "fill in 'Show' instance for Board data type in Game.hs"
+    show board = deck ++ "\n" ++ discard ++ "\nPillars:\n" ++ pillars ++ "\n" ++ columns
+      where
+        deck = showDeck (boardDeck board)
+        discard = showDiscard (boardDiscard board)
+        pillars = showPillars (boardPillars board)
+        columns = showColumns (boardColumns board)
+
 
 {- EXERCISE 4: Board Setup -}
-setup :: Deck -> Board
-setup d = error "fill in 'setup' in Game.hs"
+-- setup :: Deck -> Board
+-- setup d = error "fill in 'setup' in Game.hs"
 
+setup :: Deck -> Board
+setup d = MkBoard {
+    boardDeck = [ mkCard Spades Four, mkCard Spades Eight, mkCard Spades Seven, mkCard Hearts Eight, mkCard Hearts Three, mkCard Diamonds Eight, mkCard Spades Jack],
+    boardDiscard = [ mkCard Spades Six, mkCard Spades Five],
+    boardPillars = MkPillars {
+        spades = Just Two,
+        clubs = Nothing,
+        hearts = Just Two,
+        diamonds = Just Two
+    },
+    boardColumns = [
+        [(mkCard Clubs Two,True),(mkCard Diamonds Three,True),(mkCard Clubs Four,True),
+        (mkCard Hearts Five,True),(mkCard Clubs Six,True),(mkCard Hearts Seven,True),
+        (mkCard Clubs Eight,True),(mkCard Hearts Nine,True),(mkCard Spades Jack,True),
+        (mkCard Hearts Jack,True),(mkCard Clubs Queen,True),(mkCard Diamonds King,True)],
+
+        [(mkCard Diamonds Jack,True),(mkCard Spades Queen,True),(mkCard Hearts King,True)],
+
+        [(mkCard Clubs Nine,True),(mkCard Diamonds Jack,True),(mkCard Clubs Jack,True),
+        (mkCard Hearts Queen,True),(mkCard Spades King,True),(mkCard Clubs Three,False),
+        (mkCard Clubs Ace,False)],
+
+        [(mkCard Hearts Four,True),(mkCard Clubs Five,True),(mkCard Diamonds Six,True),
+        (mkCard Hearts Jack,False),(mkCard Diamonds Queen,False)],
+
+        [(mkCard Hearts Six,True),(mkCard Clubs Seven,False),(mkCard Clubs Jack,False),
+        (mkCard Clubs King,False)],
+
+        [(mkCard Diamonds Nine,True),(mkCard Spades Three,False)],
+
+        [(mkCard Diamonds Five,True),(mkCard Diamonds Seven,False),(mkCard Diamonds Four,False),
+        (mkCard Spades Nine,False)]
+    ]
+}
 
 
 {- EXERCISE 5: Win checking -}

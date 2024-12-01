@@ -50,7 +50,7 @@ instance Show Value where
 
 instance Show Card where
     show card = padding ++ str
-        where 
+        where
             padding = replicate (2 - length (show (cardValue card))) ' '
             str = show (cardSuit card) ++ show (cardValue card)
 
