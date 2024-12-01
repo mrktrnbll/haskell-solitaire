@@ -171,7 +171,12 @@ setup deck =
 
 {- EXERCISE 5: Win checking -}
 isWon :: Board -> Bool
-isWon b = error "fill in 'isWon' in Game.hs"
+isWon board =
+    let pillars = boardPillars board
+    in spades pillars == Just King &&
+        clubs pillars == Just King &&
+        hearts pillars == Just King &&
+        diamonds pillars == Just King
 
 {- Pillar helper functions -}
 -- Gets the pillar for a given suit.
@@ -210,7 +215,7 @@ decPillar ps Diamonds = ps { diamonds = decValue $ diamonds ps }
 
 -- Flips the top card of all columns, if not already flipped
 flipCards :: Board -> Board
-flipCards b = error "fill in 'flipCards' in Game.hs"
+flipCards board = 
 
 -- Checks whether it's possible to stack the first card onto the second.
 canStack :: Card -> Card -> Bool
