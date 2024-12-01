@@ -132,41 +132,42 @@ instance Show Board where
 -- setup :: Deck -> Board
 -- setup d = error "fill in 'setup' in Game.hs"
 
+createColumn :: [Card] -> Column
+createColumn [] = []
+createColumn deck = reverse (zip (init deck) (repeat True) ++ [((last deck), True)])
+
+takeAndRemove :: Int -> [Card] -> [Card]
+takeAndRemove value deck = take value (drop (value-1) deck)
+
 setup :: Deck -> Board
-setup d = MkBoard {
-    boardDeck = [ mkCard Spades Four, mkCard Spades Eight, mkCard Spades Seven, mkCard Hearts Eight, mkCard Hearts Three, mkCard Diamonds Eight, mkCard Spades Jack],
-    boardDiscard = [ mkCard Spades Six, mkCard Spades Five],
-    boardPillars = MkPillars {
-        spades = Just Two,
-        clubs = Nothing,
-        hearts = Just Two,
-        diamonds = Just Two
-    },
-    boardColumns = [
-        [(mkCard Clubs Two,True),(mkCard Diamonds Three,True),(mkCard Clubs Four,True),
-        (mkCard Hearts Five,True),(mkCard Clubs Six,True),(mkCard Hearts Seven,True),
-        (mkCard Clubs Eight,True),(mkCard Hearts Nine,True),(mkCard Spades Jack,True),
-        (mkCard Hearts Jack,True),(mkCard Clubs Queen,True),(mkCard Diamonds King,True)],
+setup deck =
+    MkBoard {
+        boardDeck = boardDeckValue,
+        boardDiscard = [],
+        boardPillars = MkPillars {
+            spades = Nothing,
+            clubs = Nothing,
+            hearts = Nothing,
+            diamonds = Nothing
+        },
+        boardColumns = boardColumnsValue
+    }
+    where
+        boardColumnsValue = [
+            createColumn (takeAndRemove 1 deck),
 
-        [(mkCard Diamonds Jack,True),(mkCard Spades Queen,True),(mkCard Hearts King,True)],
+            createColumn (takeAndRemove 2 deck),
 
-        [(mkCard Clubs Nine,True),(mkCard Diamonds Jack,True),(mkCard Clubs Jack,True),
-        (mkCard Hearts Queen,True),(mkCard Spades King,True),(mkCard Clubs Three,False),
-        (mkCard Clubs Ace,False)],
+            createColumn (takeAndRemove 3 deck),
 
-        [(mkCard Hearts Four,True),(mkCard Clubs Five,True),(mkCard Diamonds Six,True),
-        (mkCard Hearts Jack,False),(mkCard Diamonds Queen,False)],
+            createColumn (takeAndRemove 4 deck),
 
-        [(mkCard Hearts Six,True),(mkCard Clubs Seven,False),(mkCard Clubs Jack,False),
-        (mkCard Clubs King,False)],
+            createColumn (takeAndRemove 5 deck),
 
-        [(mkCard Diamonds Nine,True),(mkCard Spades Three,False)],
+            createColumn (takeAndRemove 6 deck),
 
-        [(mkCard Diamonds Five,True),(mkCard Diamonds Seven,False),(mkCard Diamonds Four,False),
-        (mkCard Spades Nine,False)]
-    ]
-}
-
+            createColumn (takeAndRemove 7 deck)]
+        boardDeckValue = takeAndRemove 24 (reverse deck)
 
 {- EXERCISE 5: Win checking -}
 isWon :: Board -> Bool
