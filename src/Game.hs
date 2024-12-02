@@ -69,7 +69,7 @@ showDiscard :: [Card] -> String
 showDiscard [] = "Discard: <empty>"
 showDiscard cards = "Discard: " ++ unwords (map show topCards)
   where
-    topCards = reverse (take 3 cards)
+    topCards = (take 3 cards)
 
 {- EXERCISE 3: Show boardPillars helper function -}
 showPillars :: Pillars -> String
@@ -167,7 +167,7 @@ setup deck =
             createColumn (takeAndRemove 15 20 deck),
 
             createColumn (takeAndRemove 21 27 deck)]
-        boardDeckValue = take 24 (reverse deck)
+        boardDeckValue = reverse (take 24 (reverse deck))
 
 {- EXERCISE 5: Win checking -}
 isWon :: Board -> Bool
@@ -240,7 +240,20 @@ canStackOnPillar c (Just v) = cardValue c /= King && cardValue c == succ v -- re
 
 {- EXERCISE 7: Draw -}
 draw :: Board -> Either Error Board
-draw b = error "fill in 'draw' in Game.hs" 
+draw b
+    | not (null (boardDeck b)) =
+        -- grab top card from boardDeck
+        let (topCard:remainingDeck) = boardDeck b
+            updatedDiscard = topCard : boardDiscard b
+        in Right b { boardDeck = remainingDeck, boardDiscard = updatedDiscard }
+    | not (null (boardDiscard b)) =
+        -- boardDeck was empty, so reverse discard pile and then pull top card
+        let (topCard:remainingDeck) = reverse (boardDiscard b)
+            updatedDiscard = topCard : (reverse (boardDeck b))
+        in Right b { boardDeck = remainingDeck, boardDiscard = updatedDiscard }
+    | otherwise =
+        -- through DeckEmpty since there are no cards in either
+        Left DeckEmpty
 
 {- EXERCISE 8: Move -}
 move :: Int -> Int -> Int -> Board -> Either Error Board
