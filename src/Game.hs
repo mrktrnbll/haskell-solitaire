@@ -213,21 +213,30 @@ decPillar ps Diamonds = ps { diamonds = decValue $ diamonds ps }
 
 {- EXERCISE 6: Helper Functions -}
 
--- Flips the top card of all columns, if not already flipped
+-- Flips the top card of all columns, if not already flipped  TODO - Check is done properly, not happening inplace?
 flipCards :: Board -> Board
-flipCards board = 
+flipCards board = board { boardColumns = map flipLastCard (boardColumns board) }
+  where
+    flipLastCard :: Column -> Column
+    flipLastCard [] = []
+    flipLastCard ((card, False):rest) = (card, True) : rest
+    flipLastCard ((card, True):rest) = (card, True) : rest
 
 -- Checks whether it's possible to stack the first card onto the second.
 canStack :: Card -> Card -> Bool
-canStack card onto = error "fill in 'canStack' in Game.hs"
+canStack card onto =
+    cardValue onto > cardValue card && -- not redundant, when onto was ace pred throws exception •`_´•
+    cardValue card == pred (cardValue onto) &&
+    ((isRed card && isBlack onto) || (isBlack card && isRed onto))
 
--- Updates a column at the given index
+-- Updates a column at the given index TODO - Check is done properly, not happening inplace?
 updateColumn :: Int -> Column -> [Column] -> [Column]
-updateColumn n c cs = error "fill in 'updateColumn' in Game.hs"
+updateColumn n c cs = take n cs ++ [c] ++ drop (n + 1) cs
 
 -- Checks whether it's possible to place a card onto a pillar.
 canStackOnPillar :: Card -> Maybe Value -> Bool
-canStackOnPillar c mv = error "fill in 'canStackOnPillar' in Game.hs"
+canStackOnPillar c Nothing = cardValue c == Ace 
+canStackOnPillar c (Just v) = cardValue c /= King && cardValue c == succ v -- redundant check? try avoiding error as canStack with pred
 
 {- EXERCISE 7: Draw -}
 draw :: Board -> Either Error Board
