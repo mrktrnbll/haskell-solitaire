@@ -98,7 +98,7 @@ showColumns columns = unlines (header : formattedRows)
     paddedColumns = map (padColumn maxColumnLength) newColumns
 
     
-    padColumn :: Int -> Newcolumn -> Newcolumn
+    padColumn :: Int -> Newcolumn -> Newcolumn -- refactor this
     padColumn maxLen newColumn = replicate (maxLen - length newColumn) Nothing ++ newColumn
 
     transposeRows = reverse $ transpose paddedColumns
@@ -107,7 +107,7 @@ showColumns columns = unlines (header : formattedRows)
 
     formattedRows = map (unwords . map pad) rows
 
-    formatColumn :: Newcolumn -> [String]
+    formatColumn :: Newcolumn -> [String] -- refactor this 
     formatColumn col = map formatCard col
       where
         formatCard (Just (card, True)) = show card
@@ -229,9 +229,9 @@ canStack card onto =
     cardValue card == pred (cardValue onto) &&
     ((isRed card && isBlack onto) || (isBlack card && isRed onto))
 
--- Updates a column at the given index TODO - Check is done properly, not happening inplace?
+-- Updates a column at the given index TODO - Check is done properly, not happening inplace? of course its not inplace dofus
 updateColumn :: Int -> Column -> [Column] -> [Column]
-updateColumn n c cs = take n cs ++ [c] ++ drop (n + 1) cs
+updateColumn index column boardColumns = take index boardColumns ++ [column] ++ drop (index + 1) boardColumns -- im a genius if this oneliner works
 
 -- Checks whether it's possible to place a card onto a pillar.
 canStackOnPillar :: Card -> Maybe Value -> Bool
@@ -240,24 +240,30 @@ canStackOnPillar c (Just v) = cardValue c /= King && cardValue c == succ v -- re
 
 {- EXERCISE 7: Draw -}
 draw :: Board -> Either Error Board
-draw b
-    | not (null (boardDeck b)) =
-        -- grab top card from boardDeck
-        let (topCard:remainingDeck) = boardDeck b
-            updatedDiscard = topCard : boardDiscard b
-        in Right b { boardDeck = remainingDeck, boardDiscard = updatedDiscard }
-    | not (null (boardDiscard b)) =
-        -- boardDeck was empty, so reverse discard pile and then pull top card
-        let (topCard:remainingDeck) = reverse (boardDiscard b)
-            updatedDiscard = topCard : (reverse (boardDeck b))
-        in Right b { boardDeck = remainingDeck, boardDiscard = updatedDiscard }
-    | otherwise =
-        -- through DeckEmpty since there are no cards in either
-        Left DeckEmpty
+draw board
+    | not (null (boardDeck board)) = Right board { boardDeck = remainingDeck, boardDiscard = updatedDiscard }
+    | not (null (boardDiscard board)) = Right board { boardDeck = newDeck, boardDiscard = [] }
+    | otherwise = Left DeckEmpty
+    where
+        (topCard:remainingDeck) = boardDeck board
+        updatedDiscard = topCard : boardDiscard board
+
+        newDeck = reverse (boardDiscard board)
+
+{-  -}
 
 {- EXERCISE 8: Move -}
 move :: Int -> Int -> Int -> Board -> Either Error Board
-move count from to b = error "fill in 'move' in Game.hs"
+move cardCount from to board
+    | cardStackable = Right board { boardColumns = newBoardColumns }
+    | otherwise = Left WrongOrder
+    where
+        toColumn = (boardColumns board) !! to
+        fromColumn = (boardColumns board) !! from
+        checkFromCard = fst (last (take cardCount fromColumn))
+        cardStackable = canStack checkFromCard (fst (head toColumn)) 
+        newColumn = updateColumn to ((take cardCount fromColumn) ++ toColumn) (boardColumns board)
+        newBoardColumns = updateColumn from (drop 1 fromColumn) newColumn
 
 {- EXERCISE 9: Move Stack -}
 moveStack :: Int -> Int -> Board -> Either Error Board
