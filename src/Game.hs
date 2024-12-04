@@ -69,7 +69,7 @@ showDiscard :: [Card] -> String
 showDiscard [] = "Discard: <empty>"
 showDiscard cards = "Discard: " ++ unwords (map show topCards)
   where
-    topCards = (take 3 cards)
+    topCards = reverse (take 3 cards)
 
 {- EXERCISE 3: Show boardPillars helper function -}
 showPillars :: Pillars -> String
@@ -271,7 +271,11 @@ moveStack from to b = error "fill in 'moveStack' in Game.hs"
 
 {- EXERCISE 10: Move from Discard -}
 moveFromDiscard :: Int -> Board -> Either Error Board
-moveFromDiscard idx b = error "fill in 'moveFromDiscard' in Game.hs"
+moveFromDiscard index board
+    | cardStackable = Right board { boardColumns = (updateColumn index ([((head (boardDiscard board), True))] ++ ((boardColumns board) !! index))) (boardColumns board), boardDiscard = drop 1 (boardDeck board)}
+    | otherwise = Left WrongOrder
+    where
+        cardStackable = canStack (head (boardDiscard board)) (fst (head ((boardColumns board) !! index)))
 
 {- EXERCISE 11: Move to Pillar -} 
 moveToPillar :: CardSource -> Board -> Either Error Board
