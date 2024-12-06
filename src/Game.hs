@@ -271,7 +271,7 @@ move cardCount from to board
         newBoardColumns = updateColumn from (drop cardCount fromColumn) newColumn
         invalidCount = cardCount <= 0
         toManyCards = any (not . snd) (take cardCount fromColumn)
-        checkKing = not ((null toColumn) && not ((cardValue (fst (head fromColumn))) == King))
+        checkKing = not ((null toColumn) && not ((cardValue (fst (fromColumn !! (cardCount - 1)))) == King))
 
 {- EXERCISE 9: Move Stack -}
 moveStack :: Int -> Int -> Board -> Either Error Board
@@ -289,9 +289,12 @@ moveFromDiscard index board
     | cardStackable = Right board { boardColumns = (updateColumn index ([((head (boardDiscard board), True))] ++ ((boardColumns board) !! index))) (boardColumns board), boardDiscard = tail (boardDiscard board)}
     | otherwise = Left WrongOrder
     where
+        toColumn = (boardColumns board) !! index
         checkKing = not ((null (boardColumns board !! index)) && not (cardValue (head (boardDiscard board)) == King))
-        cardStackable = canStack (head (boardDiscard board)) (fst (head ((boardColumns board) !! index)))
-
+        cardStackable 
+            | null toColumn && (cardValue (head (boardDiscard board)) == King) = True
+            | otherwise = canStack (head (boardDiscard board)) (fst (head ((boardColumns board) !! index)))
+        
 moveFromDiscardToPillar :: Board -> Either Error Board
 moveFromDiscardToPillar board
     | discardEmpty = Left DiscardEmpty
