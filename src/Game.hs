@@ -130,8 +130,6 @@ instance Show Board where
 
 
 {- EXERCISE 4: Board Setup -}
--- setup :: Deck -> Board
--- setup d = error "fill in 'setup' in Game.hs"
 
 createColumn :: [Card] -> Column
 createColumn [] = []
