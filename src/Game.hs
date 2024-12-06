@@ -225,7 +225,7 @@ flipCards board = board { boardColumns = map flipLastCard (boardColumns board) }
 -- Checks whether it's possible to stack the first card onto the second.
 canStack :: Card -> Card -> Bool
 canStack card onto =
-    cardValue onto > cardValue card && -- not redundant, when onto was ace pred throws exception •`_´•
+    cardValue onto > cardValue card && -- not redundant, when onto was ace pred throws exception 😡
     cardValue card == pred (cardValue onto) &&
     ((isRed card && isBlack onto) || (isBlack card && isRed onto))
 
@@ -255,15 +255,23 @@ draw board
 {- EXERCISE 8: Move -}
 move :: Int -> Int -> Int -> Board -> Either Error Board
 move cardCount from to board
+    | invalidCount = Left InvalidCount
+    | toManyCards = Left MovingTooManyCards
+    -- | checkKing = Left ColumnKing
+    -- | not checkKing = Right board { boardColumns = updateColumn to (take cardCount ((boardColumns board) !! from)) (boardColumns board) }
+    | not cardStackable = Left WrongOrder
     | cardStackable = Right board { boardColumns = newBoardColumns }
     | otherwise = Left WrongOrder
     where
         toColumn = (boardColumns board) !! to
         fromColumn = (boardColumns board) !! from
         checkFromCard = fst (last (take cardCount fromColumn))
-        cardStackable = canStack checkFromCard (fst (head toColumn)) 
+        cardStackable = canStack checkFromCard (fst (head toColumn))
         newColumn = updateColumn to ((take cardCount fromColumn) ++ toColumn) (boardColumns board)
-        newBoardColumns = updateColumn from (drop 1 fromColumn) newColumn
+        newBoardColumns = updateColumn from (drop cardCount fromColumn) newColumn
+        invalidCount = cardCount <= 0
+        toManyCards = any (not . snd) (take cardCount fromColumn)
+        checkKing = not (not (null toColumn) && not (cardValue ( fst(tail (take cardCount fromColumn) !! 0)) == King))
 
 {- EXERCISE 9: Move Stack -}
 moveStack :: Int -> Int -> Board -> Either Error Board
@@ -272,15 +280,44 @@ moveStack from to b = error "fill in 'moveStack' in Game.hs"
 {- EXERCISE 10: Move from Discard -}
 moveFromDiscard :: Int -> Board -> Either Error Board
 moveFromDiscard index board
-    | cardStackable = Right board { boardColumns = (updateColumn index ([((head (boardDiscard board), True))] ++ ((boardColumns board) !! index))) (boardColumns board), boardDiscard = drop 1 (boardDeck board)}
+    | cardStackable = Right board { boardColumns = (updateColumn index ([((head (boardDiscard board), True))] ++ ((boardColumns board) !! index))) (boardColumns board), boardDiscard = tail (boardDiscard board)}
     | otherwise = Left WrongOrder
     where
         cardStackable = canStack (head (boardDiscard board)) (fst (head ((boardColumns board) !! index)))
 
-{- EXERCISE 11: Move to Pillar -} 
+moveFromDiscardToPillar :: Board -> Either Error Board
+moveFromDiscardToPillar board
+    | discardEmpty = Left DiscardEmpty
+    | not stackable = Left WrongPillarOrder
+    | otherwise = Right (performMoveFromDiscard board card)
+    where
+        card = (boardDiscard board) !! 0
+        discardEmpty = length (boardDiscard board) == 0
+        stackable = canStackOnPillar card (getPillar (boardPillars board) (cardSuit card))
+
+        performMoveFromDiscard :: Board -> Card -> Board
+        performMoveFromDiscard board card = board { boardDiscard = tail (boardDiscard board), boardPillars = incPillar (boardPillars board) (cardSuit card) }
+
+moveFromColumnToPillar :: Int -> Board -> Either Error Board
+moveFromColumnToPillar index board
+    | columnEmpty = Left ColumnEmpty
+    | not stackable = Left WrongPillarOrder
+    | otherwise = Right (performMoveFromColumn board card)
+    where
+        columnEmpty = length (boardColumns board) == 0
+        (card, bool) = ((boardColumns board) !! index) !! 0
+        stackable = canStackOnPillar card (getPillar (boardPillars board) (cardSuit card))
+
+        performMoveFromColumn :: Board -> Card -> Board
+        performMoveFromColumn board card = board { boardPillars = incPillar (boardPillars board) (cardSuit card), boardColumns = updateColumn index (tail ((boardColumns board) !! index)) (boardColumns board) }
+
+{- EXERCISE 11: Move to Pillar -}
 moveToPillar :: CardSource -> Board -> Either Error Board
-moveToPillar cs b = error "fill in 'moveToPillar' in Game.hs"
-            
+moveToPillar cardSource board =
+    case cardSource of 
+        FromDiscard -> moveFromDiscardToPillar board
+        FromStack index -> moveFromColumnToPillar index board
+
 {- EXERCISE 12: Move from Pillar -}
 moveFromPillar :: Suit -> Int -> Board -> Either Error Board
 moveFromPillar suit idx b = error "fill in 'moveFromPillar' in Game.hs"
