@@ -2,6 +2,7 @@ module Game where
 import Deck
 import Error
 import Data.List (transpose)
+import Data.Maybe (fromJust)
 
 {- Commands and instructions, representing moves to be made -}
 type StackIndex = Int
@@ -74,14 +75,14 @@ showDiscard cards = "Discard: " ++ unwords (map show topCards)
 {- EXERCISE 3: Show boardPillars helper function -}
 showPillars :: Pillars -> String
 showPillars pillars = unlines [
-    "  Spades: " ++ showValue (spades pillars),
-    "  Clubs: " ++ showValue (clubs pillars),
-    "  Hearts: " ++ showValue (hearts pillars),
-    "  Diamonds: " ++ showValue (diamonds pillars)
+    "  Spades: " ++ showCard Spades (spades pillars),
+    "  Clubs: " ++ showCard Clubs (clubs pillars),
+    "  Hearts: " ++ showCard Hearts (hearts pillars),
+    "  Diamonds: " ++ showCard Diamonds (diamonds pillars)
   ]
   where
-    showValue Nothing = "<empty>"
-    showValue (Just value) = show value
+    showCard _ Nothing = "<empty>"
+    showCard suit (Just value) = show (mkCard suit value)
 
 {- EXERCISE 3: Show boardColumns helper function -}
 type Newcolumn = [Maybe (Card, Bool)]
@@ -247,7 +248,6 @@ draw board
     where
         (topCard:remainingDeck) = boardDeck board
         updatedDiscard = topCard : boardDiscard board
-
         newDeck = reverse (boardDiscard board)
 
 {-  -}
@@ -257,8 +257,8 @@ move :: Int -> Int -> Int -> Board -> Either Error Board
 move cardCount from to board
     | invalidCount = Left InvalidCount
     | toManyCards = Left MovingTooManyCards
-    -- | checkKing = Left ColumnKing
-    -- | not checkKing = Right board { boardColumns = updateColumn to (take cardCount ((boardColumns board) !! from)) (boardColumns board) }
+    | not checkKing = Left ColumnKing
+    -- | checkKing = Right board { boardColumns = updateColumn to (take cardCount ((boardColumns board) !! from)) (boardColumns board) }
     | not cardStackable = Left WrongOrder
     | cardStackable = Right board { boardColumns = newBoardColumns }
     | otherwise = Left WrongOrder
@@ -266,23 +266,32 @@ move cardCount from to board
         toColumn = (boardColumns board) !! to
         fromColumn = (boardColumns board) !! from
         checkFromCard = fst (last (take cardCount fromColumn))
-        cardStackable = canStack checkFromCard (fst (head toColumn))
+        cardStackable
+            | null toColumn && ((cardValue (fst (head fromColumn))) == King) = True
+            | otherwise = canStack checkFromCard (fst (head toColumn))
         newColumn = updateColumn to ((take cardCount fromColumn) ++ toColumn) (boardColumns board)
         newBoardColumns = updateColumn from (drop cardCount fromColumn) newColumn
         invalidCount = cardCount <= 0
         toManyCards = any (not . snd) (take cardCount fromColumn)
-        checkKing = not (not (null toColumn) && not (cardValue ( fst(tail (take cardCount fromColumn) !! 0)) == King))
+        checkKing = not ((null toColumn) && not ((cardValue (fst (head fromColumn))) == King))
 
 {- EXERCISE 9: Move Stack -}
 moveStack :: Int -> Int -> Board -> Either Error Board
-moveStack from to b = error "fill in 'moveStack' in Game.hs"
+moveStack from to board = move cardCount from to board
+    where
+        fromColumn = (boardColumns board) !! from
+        cardCount = length $ takeWhile snd fromColumn
 
 {- EXERCISE 10: Move from Discard -}
 moveFromDiscard :: Int -> Board -> Either Error Board
 moveFromDiscard index board
+    | null (boardDiscard board) = Left DiscardEmpty
+    | not checkKing = Left ColumnKing
+    -- | checkKing = Right board { boardDiscard = tail (boardDiscard board), boardColumns = (updateColumn index ([((head (boardDiscard board), True))] ++ ((boardColumns board) !! index))) (boardColumns board) }
     | cardStackable = Right board { boardColumns = (updateColumn index ([((head (boardDiscard board), True))] ++ ((boardColumns board) !! index))) (boardColumns board), boardDiscard = tail (boardDiscard board)}
     | otherwise = Left WrongOrder
     where
+        checkKing = not ((null (boardColumns board !! index)) && not (cardValue (head (boardDiscard board)) == King))
         cardStackable = canStack (head (boardDiscard board)) (fst (head ((boardColumns board) !! index)))
 
 moveFromDiscardToPillar :: Board -> Either Error Board
@@ -320,7 +329,23 @@ moveToPillar cardSource board =
 
 {- EXERCISE 12: Move from Pillar -}
 moveFromPillar :: Suit -> Int -> Board -> Either Error Board
-moveFromPillar suit idx b = error "fill in 'moveFromPillar' in Game.hs"
+moveFromPillar suit index board
+    | pillarEmpty = Left PillarEmpty
+    | columnEmpty = Left ColumnEmpty
+    | wrongOrder = Left WrongOrder
+    | otherwise = Right updatedBoard
+    where
+        pillarValue = getPillar (boardPillars board) suit
+        pillarEmpty = pillarValue == Nothing
+        columnEmpty = null (boardColumns board !! index)
+        pillarCard = mkCard suit (fromJust pillarValue)
+        targetColumn = boardColumns board !! index
+        wrongOrder
+            | columnEmpty = not (cardValue pillarCard == King)
+            | otherwise = not (canStack pillarCard (fst (head targetColumn)))
+
+        updatedBoard = board { boardColumns = updateColumn index ([(pillarCard, True)] ++ (boardColumns board) !! index) (boardColumns board), boardPillars = decPillar (boardPillars board) (suit)}
+
 
 {- EXERCISE 13: Solve -}
 solve :: Board -> Board
