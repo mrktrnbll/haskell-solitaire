@@ -248,7 +248,6 @@ draw board
         updatedDiscard = topCard : boardDiscard board
         newDeck = reverse (boardDiscard board)
 
-{-  -}
 
 {- EXERCISE 8: Move -}
 move :: Int -> Int -> Int -> Board -> Either Error Board
